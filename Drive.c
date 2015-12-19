@@ -1,9 +1,19 @@
 #include "PID.c"
-PID drivePosition;
+PID driveLeftPosition, driveRightPosition;
 bool driveOnPosition = true;
 float driveAngle = 0.0;
 int driveEncoderGoal = 0;
 int driveAngleGoal = 0;
+bool encoderGoalPriority = false;
+double x = 0.0;
+double y = 0.0;
+
+void resetEncoders() {
+	SensorValue[leftEn] = 0;
+	nMotorEncoder[leftFront] = 0;
+	SensorValue[rightEn] = 0;
+	nMotorEncoder[rightFront] = 0;
+}
 
 void waitForDrive(int timeout) {
 	clearTimer(T4);
@@ -22,7 +32,7 @@ float getRightSideRotations() {
 	return (0.5)*(nMotorEncoder[rightFront]/627.2) + (0.5)*(-SensorValue[rightEn]/360.0);
 }
 
-float getRighttSideMM() {
+float getRightSideMM() {
 	return getRightSideRotations() * MM_PER_REV;
 }
 
@@ -41,34 +51,68 @@ void setDrive(int power) {
 	setLeftSide(power);
 }
 
-
-void moveForwardFeedForward(int encoders) {
-
+bool isEncoderOnTarget() {
+	if (isInRangeOf(getRightSideMM(), driveEncoderGoal, 20) && isInRangeOf(getLeftSideMM(), driveEncoderGoal, 20)) {
+		encoderGoalPriority = false;
+		return true;
+	}
+	return false;
 }
 
-task moveForwardPIDTask() {
-	while() {
+bool isAngleOnTarget() {
+	return isInRangeOf(driveAngle, driveAngleGoal, 3) ;
+}
 
-	}
+void moveForwardMM(double mm) {
+	encoderGoalPriority = true;
+	resetEncoders();
+	driveEncoderGoal = mm;
 }
 
 void initDrive() {
-	PIDInit(drivePosition, 1, 0, 0);
+	PIDInit(driveLeftPosition, 2.5, 0.05, 0.5);
+	PIDInit(driveRightPosition, 1.0, 0.05, 10.0);
+}
+
+task driveNavigator() {
+	initDrive();
+	while(true) {
+		if (!isEncoderOnTarget() && encoderGoalPriority) {
+			driveLeftPosition.print = true;
+			///setRightSide(80);
+			float rightThrottle = PIDRun(driveRightPosition, (float)(driveEncoderGoal - getRightSideMM()));
+			float leftThrottle = PIDRun(driveLeftPosition, (float)(getLeftSideMM() - getRightSideMM()));
+			setRightSide(rightThrottle);
+			setLeftSide(-1 * leftThrottle);
+			//writeDebugStreamLine("EN MM right %3.3f left %3.3f", getRightSideMM(), getLeftSideMM());
+		}else if (!isAngleOnTarget()) {
+			setDrive(0);
+		}else {
+			setDrive(0);
+		}
+	}
+	wait1Msec(250);
 }
 
 task driveTracker() {
 	float lastRightRotations = getRightSideRotations();
 	float lastLeftRotations = getLeftSideRotations();
-	float degreesPerRotations = 180.0 * (ROBOT_WHEEL_DIAMETER_MM/ROBOT_WIDTH_MM);
+	float degreesPerRotations = /*180.0 * (float)((float)ROBOT_WHEEL_DIAMETER_MM/(float)ROBOT_WIDTH_MM)*/ ROBOT_DEG_PER_ROTATION;
 	while (true) {
 		float rightSide = getRightSideRotations();
 		float leftSide = getLeftSideRotations();
 		driveAngle += ( (rightSide - lastRightRotations) - (leftSide - lastLeftRotations) )	* degreesPerRotations;
+		if ( printEncodersRot ) {
+			writeDebugStreamLine("EN ROT right %3.3f left %3.3f", rightSide, leftSide);
+		}
+		if ( printEncodersMM ) {
+			writeDebugStreamLine("EN MM right %3.3f left %3.3f", getRightSideMM(), getLeftSideMM());
+		}
+		if ( printAngle ) {
+			writeDebugStreamLine("ANGLE degPerRot: %3.2f Angle: %3.3f", (rightSide - lastRightRotations), (leftSide - lastLeftRotations), degreesPerRotations, driveAngle);
+		}
 		lastLeftRotations = leftSide;
 		lastRightRotations = rightSide;
-
-		writeDebugStreamLine("RightD: %3.3f LeftD: %3.3f defPerRot: %3.2f Angle: %3.3f", (rightSide - lastRightRotations), (leftSide - lastLeftRotations), degreesPerRotations, driveAngle);
-			writeDebugStreamLine("right %3.3f last %3.3f", rightSide, lastRightRotations);
-		wait1Msec(50);
+		wait1Msec(100);
 	}
 }

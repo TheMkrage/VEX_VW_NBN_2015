@@ -8,6 +8,7 @@ struct PID {
   float kILimit;
   float integral;
 	float previousError;
+	bool print;
 };
 
 void PIDInit(PID controller, float kP, float kI, float kD);
