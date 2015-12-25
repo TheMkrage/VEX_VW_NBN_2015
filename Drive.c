@@ -17,9 +17,18 @@ void resetEncoders() {
 
 void waitForDrive(int timeout) {
 	clearTimer(T4);
-	while (!driveOnPosition ){
+	while (!driveOnPosition && time1[T4] < timeout){
 		wait1Msec(150);
 	}
+	encoderGoalPriority = false;
+	angleGoalPriority = false;
+}
+
+void waitForDrive() {
+	while (!driveOnPosition){
+		wait1Msec(150);
+	}
+	writeDebugStreamLine("IS DONE");
 	encoderGoalPriority = false;
 	angleGoalPriority = false;
 }
@@ -71,18 +80,9 @@ bool isAngleOnTarget() {
 	return false;
 }
 
-void moveForwardMM(double mm) {
-	encoderGoalPriority = true;
-	resetEncoders();
-	driveEncoderGoal = mm;
-	wait1Msec(500);
-}
 
-void addToAngle(double angleAdd) {
-	angleGoalPriority = true;
-	driveAngleGoal = driveAngle - angleAdd;
-	wait1Msec(500);
-}
+
+
 
 void initDrive() {
 	PIDInit(driveLeftPosition, 3.0, 0.0, 10.0);
@@ -96,7 +96,7 @@ task driveNavigator() {
 		if (!isEncoderOnTarget() && encoderGoalPriority) {
 			driveOnPosition = false;
 			//driveRightPosition.print = true;
-			driveLeftPosition.print = true;
+			// driveLeftPosition.print = true;
 			float rightThrottle = PIDRun(driveRightPosition, (float)(driveEncoderGoal - getRightSideMM()));
 			float leftThrottle = PIDRun(driveLeftPosition, (float)(driveEncoderGoal - getRightSideMM()));
 			setRightSide(rightThrottle);
@@ -107,10 +107,30 @@ task driveNavigator() {
 			setRightSide(turn);
 			setLeftSide(-turn);
 		}else {
+		writeDebugStreamLine("tis true %3.3f actual %3.3f", driveEncoderGoal, getRightSideMM() );
 			driveOnPosition = true;
 			setDrive(0);
 		}
 	}
+	wait1Msec(100);
+}
+
+void addToAngle(double angleAdd) {
+	stopTask(driveNavigator);
+	driveAngleGoal = driveAngle - angleAdd;
+	angleGoalPriority = true;
+	driveOnPosition = false;
+	startTask(driveNavigator);
+	wait1Msec(500);
+}
+
+void moveForwardMM(double mm) {
+	stopTask(driveNavigator);
+	resetEncoders();
+	driveEncoderGoal = mm;
+	encoderGoalPriority = true;
+	driveOnPosition = false;
+	startTask(driveNavigator);
 	wait1Msec(500);
 }
 
