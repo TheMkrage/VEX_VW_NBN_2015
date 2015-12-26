@@ -1,4 +1,5 @@
 #include "PID.h"
+// safety
 #ifndef PID_SOURCE
 #define PID_SOURCE
 #pragma systemFile
@@ -24,6 +25,8 @@ float PIDRun(PID controller, float error) {
 
 	// calculate the derivative
 	float pidDerivativ =  error - controller.previousError;
+
+	// add integral
 	controller.integral += error * controller.kI;
 	if(controller.integral > controller.kILimit)
 		controller.integral = controller.kILimit;
@@ -35,6 +38,8 @@ float PIDRun(PID controller, float error) {
 		writeDebugStreamLine("\n P: %3.3f I: %3.3f D: %3.3f \n error: %3.3f outPut: %3.3f", (float)(controller.kP * error), (float)( controller.integral), (float)(controller.kD * pidDerivativ), error, (float)((float)(controller.kP * error)  + (float)(controller.kI * controller.integral) + (float)(controller.kD * pidDerivativ)));
 	}
 	controller.previousError = (float)error;
+
+	// return kP * error + kI * integral + kD * derivative
 	return (float)((float)(controller.kP * error)  + (float)(controller.integral) + (float)(controller.kD * pidDerivativ));
 }
 

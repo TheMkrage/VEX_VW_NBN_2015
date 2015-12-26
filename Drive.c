@@ -1,13 +1,12 @@
 #include "PID.c"
-PID driveLeftPosition, driveRightPosition, anglePosition;
+PID driveLeftPosition, driveRightPosition, anglePosition; // Control Loops for each function of the drive
 bool driveOnPosition = true;
-float driveAngle = 0.0;
+float driveAngle = 0.0; // Current Angle
 int driveEncoderGoal = 0;
 int driveAngleGoal = 0;
-bool encoderGoalPriority = false, angleGoalPriority = false;
-double x = 0.0;
-double y = 0.0;
+bool encoderGoalPriority = false, angleGoalPriority = false; // Tell which function of the drive is being given priority
 
+// Zeros drive encoders
 void resetEncoders() {
 	SensorValue[leftEn] = 0;
 	nMotorEncoder[leftFront] = 0;
@@ -17,13 +16,12 @@ void resetEncoders() {
 
 void waitForDrive(int timeout) {
 	clearTimer(T4);
-	while (!driveOnPosition && time1[T4] < timeout){
-		wait1Msec(150);
-	}
+	while ( !driveOnPosition && time1[T4] < timeout){wait1Msec(150); }
 	encoderGoalPriority = false;
 	angleGoalPriority = false;
 }
 
+// No timeout
 void waitForDrive() {
 	while (!driveOnPosition){
 		wait1Msec(150);
@@ -80,12 +78,9 @@ bool isAngleOnTarget() {
 	return false;
 }
 
-
-
-
-
+// inits in navigator
 void initDrive() {
-	PIDInit(driveLeftPosition, 3.0, 0.0, 10.0);
+	PIDInit(driveLeftPosition, 3.0, 0.0, 10.0); // kP, kI, kD, simple PD controller will do for this drive
 	PIDInit(driveRightPosition, 3.0, 0.00, 10.0);
 	PIDInit(anglePosition, 4.1, 0, 2.5);
 }
@@ -93,21 +88,22 @@ void initDrive() {
 task driveNavigator() {
 	initDrive();
 	while(true) {
-		if (!isEncoderOnTarget() && encoderGoalPriority) {
+		if (!isEncoderOnTarget() && encoderGoalPriority) { // Fix translational error
 			driveOnPosition = false;
 			//driveRightPosition.print = true;
 			// driveLeftPosition.print = true;
+			// Run PD Controlelr to find error in translational movement and how to fix it
 			float rightThrottle = PIDRun(driveRightPosition, (float)(driveEncoderGoal - getRightSideMM()));
 			float leftThrottle = PIDRun(driveLeftPosition, (float)(driveEncoderGoal - getRightSideMM()));
 			setRightSide(rightThrottle);
 			setLeftSide(leftThrottle);
-		}else if (!isAngleOnTarget() && angleGoalPriority) {
+		}else if (!isAngleOnTarget() && angleGoalPriority) { // Fix Angular Error
 			driveOnPosition = false;
+			// PD controlelr to fix angle
 			float turn = PIDRun(anglePosition, (float)(driveAngleGoal - driveAngle));
 			setRightSide(turn);
 			setLeftSide(-turn);
-		}else {
-		writeDebugStreamLine("tis true %3.3f actual %3.3f", driveEncoderGoal, getRightSideMM() );
+		}else { // Make sure others know that drive has met goal
 			driveOnPosition = true;
 			setDrive(0);
 		}
@@ -115,7 +111,8 @@ task driveNavigator() {
 	wait1Msec(100);
 }
 
-void addToAngle(double angleAdd) {
+// Add offset to the angle
+void addToAngle(float angleAdd) {
 	stopTask(driveNavigator);
 	driveAngleGoal = driveAngle - angleAdd;
 	angleGoalPriority = true;
@@ -124,7 +121,8 @@ void addToAngle(double angleAdd) {
 	wait1Msec(500);
 }
 
-void moveForwardMM(double mm) {
+// Add offset (mm) to the translational count
+void moveForwardMM(float mm) {
 	stopTask(driveNavigator);
 	resetEncoders();
 	driveEncoderGoal = mm;
@@ -134,14 +132,26 @@ void moveForwardMM(double mm) {
 	wait1Msec(500);
 }
 
+// Slowly goe at a certain speed
+void moveForwardMMSlow(float mm) {
+	stopTask(driveNavigator);
+	resetEncoders();
+	while(getRightSideMM() < mm) {
+		setDrive(40);
+	}
+	setDrive(0);
+}
+
 task driveTracker() {
 	float lastRightRotations = getRightSideRotations();
 	float lastLeftRotations = getLeftSideRotations();
-	float degreesPerRotations = /*180.0 * (float)((float)ROBOT_WHEEL_DIAMETER_MM/(float)ROBOT_WIDTH_MM)*/ ROBOT_DEG_PER_ROTATION;
+	float degreesPerRotations = ROBOT_DEG_PER_ROTATION;
 	while (true) {
 		float rightSide = getRightSideRotations();
 		float leftSide = getLeftSideRotations();
+		// delta Angle = delta Right - delta Left * degPerRotations
 		driveAngle += ( (rightSide - lastRightRotations) - (leftSide - lastLeftRotations) )	* degreesPerRotations;
+		// Debugging Statements
 		if ( printEncodersRot ) {
 			writeDebugStreamLine("EN ROT right %3.3f left %3.3f", rightSide, leftSide);
 		}

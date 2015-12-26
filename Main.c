@@ -32,179 +32,200 @@
 #define ROBOT_WHEEL_DIAMETER_MM 94.0
 #define ROBOT_DEG_PER_ROTATION 57.6
 
+// Debugging Vars
 bool printAngle = false;
 bool printEncodersMM = false;
 bool printEncodersRot = false;
 
 
 // SOME UTIL METHODS
-bool isInRangeOf(double input, double goal, double threshold) {
-	if ( input < goal + threshold && input > goal - threshold) {
-		return true;
-	}
-	return false;
+// returns true if input is in range of goal and threshold
+bool isInRangeOf(float input, float goal, float threshold) {
+	return input < goal + threshold && input > goal - threshold;
 }
 
+// Subsystems
 #include "Drive.c"
 #include "Arm.c"
 #include "Shooter.c"
+
 task main()
 {
 	startTask(driveTracker);
 	startTask(driveNavigator);
 	startTask(armNavigator);
 
+	//Stack 1 Red Starting Tile Stack
 	setShooter(127);
 	motor[elevator] = 127;
-	wait1Msec(500);
+	wait1Msec(220);
 	addToAngle(-26);
-	waitForDrive();
+	waitForDrive(750);
 	setShooter(-127);
 	motor[elevator] = -127;
 	moveForwardMM(1200);
 	waitForDrive();
 	setShooter(0);
 	motor[elevator] = 0;
-	moveArmTo(350);
-	addToAngle(-112);
+	moveArmTo(630);
+	addToAngle(88);
 	waitForDrive();
-	moveForwardMM(1200);
+	moveForwardMM(-1300);
 	waitForDrive();
-	shoot(105);
+	shoot(100);
 	moveArmTo(0);
 	moveForwardMM(100);
 	waitForDrive();
 
-	// get stack 2
-	motor[elevator] = -127;
-	setShooter(-127);
-	addToAngle(-154);
+	//Stack 2
+	addToAngle(60);
+	waitForDrive();
+	intake();
+	moveForwardMM(500);
+	waitForDrive();
+	wait1Msec(250);
+	moveArmTo(630);
+	neutral();
+	addToAngle(-60);
+	waitForDrive();
+	moveForwardMM(-500);
+	waitForDrive();
+	shoot(90);
+
+	// Stack 3 Blue Wall Stack
+	moveArmTo(0);
+	intake();
+	addToAngle(-11);
+	waitForDrive(1000);
+	moveForwardMM(450);
+	addToAngle(115);
+	waitForDrive();
+	waitForArm(1000);
+	moveForwardMMSlow(175);
+	waitForDrive();
+	wait1Msec(250);
+	moveForwardMM(-300);
+	waitForDrive();
+	moveArmTo(350);
+	neutral();
+	addToAngle(78);
+	waitForDrive();
+	moveForwardMM(300);
+	shoot(90);
+
+	// Stack 4 Blue Pole Stack
+	moveArmTo(0);
+	intake();
+	addToAngle(85);
+	waitForDrive();
+	waitForArm(1000);
+	moveForwardMM(550);
+	waitForDrive();
+	moveArmTo(350);
+	neutral();
+	addToAngle(-117);
+	waitForDrive();
+	shoot(105);
+
+	// Stack 5
+	moveArmTo(0);
+	intake();
+	addToAngle(95);
+	waitForDrive();
+	wait1Msec(250);
+	moveForwardMM(1000);
+	waitForDrive();
+	neutral();
+	moveArmTo(330);
+	addToAngle(35);
 	waitForDrive();
 	moveForwardMM(500);
 	waitForDrive();
-	moveArmTo(600);
-	motor[elevator] = 0;
-	setShooter(0);
-	moveForwardMM(-500);
-	waitForDrive();
+	shoot(100);
 
-	addToAngle(-46);
-	waitForDrive();
-	shoot(90); // shoot stack 2
-
+	// Stack 6 center wall stack
+	addToAngle(-20);
+	waitForDrive(1000);
 	moveArmTo(0);
-	addToAngle(80);
-	waitForDrive();
-	setShooter(-127);
-	motor[elevator] = -127;
-	moveForwardMM(410);
-	waitForDrive();
-	wait1Msec(500);
-	moveArmTo(350);
-	addToAngle(120);
-	waitForDrive();
-	shoot(90);
-
-	// go to get stack 4
-	moveArmTo(0);
-	addToAngle(85);
+	moveForwardMM(-420);
 	waitForDrive();
 	intake();
-	moveForwardMM(800);
+	addToAngle(-79);
 	waitForDrive();
-	neutral();
-	moveArmTo(600);
-	addToAngle(80);
-	waitForDrive();
-	moveForwardMM(-1000);
-	waitForDrive();
-	shoot(90);
-
-	// go to get stack 5
-	moveArmTo(0);
-	moveForwardMM(350);
-	waitForDrive();
-	addToAngle(-83);
-	waitForDrive();
-	intake();
-	moveForwardMM(940);
-	waitForDrive();
-	neutral();
-	moveArmTo(350);
-	moveForwardMM(300);
-	waitForDrive();
-	shoot(90);
-
-	// go to get stack 6
-	moveArmTo(0);
+	moveForwardMMSlow(175);
 	moveForwardMM(-300);
 	waitForDrive();
-	intake();
-	addToAngle(-85);
-	waitForDrive(2500);
-	moveForwardMM(100);
-	waitForDrive();
-	wait1Msec(500);
-	moveForwardMM(-100);
-	waitForDrive();
-	addToAngle(-100);
-	waitForDrive();
-	moveForwardMM(200);
-	waitForDrive();
+	moveArmTo(350);
 	neutral();
-	moveArmTo(600);
-	moveForwardMM(-1800);
+	addToAngle(75);
+	waitForDrive();
+	moveForwardMM(350);
 	waitForDrive();
 	shoot(90);
 
-	// next stack
+	//Stack 7 Red Pole Stack
 	moveArmTo(0);
 	intake();
-	waitForArm(5000);
-	moveForwardMM(880);
+	addToAngle(90);
 	waitForDrive();
-	addToAngle(-20);
+	waitForArm(1000);
+	moveForwardMM(600);
 	waitForDrive();
-	moveArmTo(600);
 	neutral();
-	moveForwardMM(-1000);
+	moveArmTo(350);
+	addToAngle(-125);
 	waitForDrive();
+	waitForArm(500);
+	moveForwardMM(300);
 	shoot(90);
 
-	// next stack
+	// Stack 8
 	moveArmTo(0);
-	moveForwardMM(400);
-	waitForDrive();
 	intake();
-	addToAngle(-90);
+	addToAngle(110);
 	waitForDrive();
 	moveForwardMM(900);
 	waitForDrive();
+	moveArmTo(620);
 	neutral();
-	moveArmTo(600);
-	addToAngle(45);
+	addToAngle(50);
 	waitForDrive();
 	moveForwardMM(-300);
 	waitForDrive();
 	shoot(100);
 
-	// last stack
+	// Stack 9 Blue Starting Tile Stack
 	moveArmTo(0);
 	intake();
-	wait1Msec(750);
-	addToAngle(-85);
-	waitForDrive(2000);
-	wait1Msec(500);
+	addToAngle(22);
+	waitForDrive();
+	moveForwardMM(1100);
+	waitForDrive();
+	moveArmTo(650);
+	neutral();
+	moveForwardMM(-1100);
+	waitForDrive();
+	addToAngle(-22);
+	waitForDrive();
+	shoot(100);
+
+	// Stack 10 Red wall Stack
+	moveArmTo(0);
+	intake();
+	addToAngle(-91);
+	waitForDrive();
+	moveForwardMM(-100);
+	waitForDrive();
 	moveForwardMM(400);
 	waitForDrive();
-	neutral();
 	moveForwardMM(-400);
 	waitForDrive();
 	moveArmTo(350);
 	addToAngle(-140);
 	waitForDrive();
-	setShooter(127);
-	motor[elevator] = 127;
+	shoot(90);
+
+	// Debug Loop
 	while(true)
 	{
 		wait1Msec(250);
