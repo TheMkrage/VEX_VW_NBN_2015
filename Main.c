@@ -198,7 +198,7 @@ task main()
 	moveArmTo(0);
 	intake();
 	addToAngle(22);
-	waitForDrive();
+	waitForDrive(2000);
 	moveForwardMM(1100);
 	waitForDrive();
 	moveArmTo(650);
@@ -220,10 +220,12 @@ task main()
 	waitForDrive();
 	moveForwardMM(-400);
 	waitForDrive();
+	neutral();
 	moveArmTo(350);
 	addToAngle(-140);
 	waitForDrive();
 	shoot(90);
+
 
 	// Debug Loop
 	while(true)
